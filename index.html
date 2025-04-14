@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Perfil LinkedIn - EMB</title>
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; max-width: 600px; margin: 40px auto; padding: 20px 30px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #003366; margin-bottom: 1.5em;}
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+        input[type="email"], input[type="file"] { width: calc(100% - 22px); /* Ajuste para padding/borda */ padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; }
+        input[type="file"] { padding: 5px; } /* Ajuste padding para file input */
+        button { display: block; width: 100%; padding: 12px; background-color: #0059b3; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; }
+        button:hover:not(:disabled) { background-color: #003366; }
+        button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+        #status { margin-top: 25px; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; }
+        .success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .processing { color: #004085; background-color: #cce5ff; border: 1px solid #b8daff;}
+        .hidden { display: none; } /* Para esconder o status inicialmente */
+    </style>
+</head>
+<body>
+
+    <h1>Análise de Perfil LinkedIn</h1>
+    <p>Envie seu perfil do LinkedIn em formato PDF e seu e-mail para receber a análise personalizada desenvolvida pela Bionic's by EMB.</p>
+
+    <form id="upload-form">
+        <div>
+            <label for="email">Seu E-mail:</label>
+            <input type="email" id="email" name="email" placeholder="seu.email@exemplo.com" required>
+        </div>
+        <div>
+            <label for="linkedinPdf">Seu LinkedIn (Arquivo PDF):</label>
+            <input type="file" id="linkedinPdf" name="linkedinPdf" accept=".pdf" required>
+        </div>
+        <button type="submit" id="submit-button">Enviar para Análise</button>
+    </form>
+
+    <div id="status" class="hidden"></div> <script>
+        const form = document.getElementById('upload-form');
+        const statusDiv = document.getElementById('status');
+        const submitButton = document.getElementById('submit-button');
+
+        // --------------- URL DO SEU WEBHOOK N8N ---------------
+        const N8N_WEBHOOK_URL = 'https://grupoemb.app.n8n.cloud/webhook/9fcd7775-6bd0-4217-bcd2-5383cc807034';
+        // --------------- URL DO SEU WEBHOOK N8N ---------------
+
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Impede o envio padrão
+
+            statusDiv.className = 'hidden'; // Esconde status anterior
+
+            const formData = new FormData(form);
+            const email = formData.get('email');
+            const file = formData.get('linkedinPdf');
+
+            // Validações
+            if (!email || !file || file.size === 0) {
+                statusDiv.textContent = 'Erro: Preencha o e-mail e selecione um arquivo PDF.';
+                statusDiv.className = 'error';
+                return;
+            }
+             if (!file.name.toLowerCase().endsWith('.pdf')) {
+                statusDiv.textContent = 'Erro: O arquivo precisa ser um PDF.';
+                 statusDiv.className = 'error';
+                 return;
+             }
+             // Validação simples de email (opcional, mas útil)
+             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                statusDiv.textContent = 'Erro: Formato de e-mail inválido.';
+                 statusDiv.className = 'error';
+                 return;
+             }
+
+
+            statusDiv.textContent = 'Enviando dados... Aguarde um momento.';
+            statusDiv.className = 'processing'; // Mostra status
+            submitButton.disabled = true; // Desabilita botão
+
+            try {
+                // Envia para o Webhook N8N
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    body: formData // Contém email e linkedinPdf (arquivo)
+                });
+
+                // Processa a resposta do N8N
+                const result = await response.json();
+
+                if (response.ok && result.message === 'Webhook received') {
+                    // Sucesso - N8N recebeu os dados
+                    statusDiv.textContent = 'Recebido! Sua análise será processada e enviada por e-mail em breve. Pode fechar esta página.';
+                    statusDiv.className = 'success';
+                    form.reset(); // Limpa o formulário
+                    // Mantém o botão desabilitado para evitar reenvio
+                    // submitButton.disabled = false; // OU reabilita se quiser permitir outro envio
+                } else {
+                    // Erro retornado pelo N8N ou erro HTTP
+                    const errorMessage = result.message || `Erro ${response.status} ao contatar o servidor.`;
+                    statusDiv.textContent = `Falha no envio: ${errorMessage}. Por favor, tente novamente.`;
+                    statusDiv.className = 'error';
+                    submitButton.disabled = false; // Reabilita em caso de erro
+                }
+
+            } catch (error) {
+                // Erro de rede ou conexão
+                console.error('Erro na requisição fetch:', error);
+                statusDiv.textContent = 'Erro de conexão ao enviar. Verifique sua internet ou tente mais tarde.';
+                statusDiv.className = 'error';
+                submitButton.disabled = false; // Reabilita em caso de erro
+            }
+            // Não reabilitamos o botão em caso de sucesso aqui, para evitar envios duplicados.
+        });
+    </script>
+
+</body>
+</html>
