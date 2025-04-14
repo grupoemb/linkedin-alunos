@@ -7,13 +7,14 @@
     <style>
         body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; max-width: 600px; margin: 40px auto; padding: 20px 30px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #003366; margin-bottom: 1.5em;}
+        p { color: #333; line-height: 1.6; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
         input[type="email"], input[type="file"] { width: calc(100% - 22px); /* Ajuste para padding/borda */ padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; }
-        input[type="file"] { padding: 5px; } /* Ajuste padding para file input */
+        input[type="file"] { padding: 5px; background-color: #fff; } /* Fundo branco para file input */
         button { display: block; width: 100%; padding: 12px; background-color: #0059b3; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; }
         button:hover:not(:disabled) { background-color: #003366; }
-        button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
-        #status { margin-top: 25px; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; }
+        button:disabled { background-color: #a0a0a0; cursor: not-allowed; opacity: 0.7;}
+        #status { margin-top: 25px; padding: 12px; border-radius: 4px; text-align: center; font-weight: bold; font-size: 0.95em;}
         .success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
         .error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
         .processing { color: #004085; background-color: #cce5ff; border: 1px solid #b8daff;}
@@ -37,81 +38,86 @@
         <button type="submit" id="submit-button">Enviar para Análise</button>
     </form>
 
-    <div id="status" class="hidden"></div> <script>
+    <div id="status" class="hidden"></div>
+
+    <script>
         const form = document.getElementById('upload-form');
         const statusDiv = document.getElementById('status');
         const submitButton = document.getElementById('submit-button');
 
-        // --------------- URL DO SEU WEBHOOK N8N ---------------
+        // --------------- URL DO SEU WEBHOOK N8N DE PRODUÇÃO ---------------
         const N8N_WEBHOOK_URL = 'https://grupoemb.app.n8n.cloud/webhook/9fcd7775-6bd0-4217-bcd2-5383cc807034';
-        // --------------- URL DO SEU WEBHOOK N8N ---------------
+        // --------------- URL DO SEU WEBHOOK N8N DE PRODUÇÃO ---------------
 
 
         form.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Impede o envio padrão
+            event.preventDefault(); // Impede o envio padrão do navegador
+            statusDiv.className = 'hidden'; // Esconde status anterior ao tentar novo envio
 
-            statusDiv.className = 'hidden'; // Esconde status anterior
-
+            // Pega os dados do formulário
             const formData = new FormData(form);
             const email = formData.get('email');
-            const file = formData.get('linkedinPdf');
+            const file = formData.get('linkedinPdf'); // O nome 'linkedinPdf' deve bater com o N8N
 
-            // Validações
+            // Validações básicas no lado do cliente
             if (!email || !file || file.size === 0) {
                 statusDiv.textContent = 'Erro: Preencha o e-mail e selecione um arquivo PDF.';
-                statusDiv.className = 'error';
+                statusDiv.className = 'error'; // Mostra erro
                 return;
             }
              if (!file.name.toLowerCase().endsWith('.pdf')) {
                 statusDiv.textContent = 'Erro: O arquivo precisa ser um PDF.';
-                 statusDiv.className = 'error';
+                 statusDiv.className = 'error'; // Mostra erro
                  return;
              }
-             // Validação simples de email (opcional, mas útil)
+             // Validação simples de formato de email
              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 statusDiv.textContent = 'Erro: Formato de e-mail inválido.';
-                 statusDiv.className = 'error';
+                 statusDiv.className = 'error'; // Mostra erro
                  return;
              }
 
-
+            // Feedback visual de processamento
             statusDiv.textContent = 'Enviando dados... Aguarde um momento.';
             statusDiv.className = 'processing'; // Mostra status
-            submitButton.disabled = true; // Desabilita botão
+            submitButton.disabled = true; // Desabilita botão durante envio
 
             try {
-                // Envia para o Webhook N8N
+                // Envia os dados para o Webhook N8N usando Fetch API
                 const response = await fetch(N8N_WEBHOOK_URL, {
                     method: 'POST',
-                    body: formData // Contém email e linkedinPdf (arquivo)
+                    body: formData // FormData lida com multipart/form-data para o arquivo
                 });
 
-                // Processa a resposta do N8N
+                // Tenta ler a resposta JSON do N8N
                 const result = await response.json();
 
-                if (response.ok && result.message === 'Webhook received') {
-                    // Sucesso - N8N recebeu os dados
-                    statusDiv.textContent = 'Recebido! Sua análise será processada e enviada por e-mail em breve. Pode fechar esta página.';
-                    statusDiv.className = 'success';
-                    form.reset(); // Limpa o formulário
-                    // Mantém o botão desabilitado para evitar reenvio
-                    // submitButton.disabled = false; // OU reabilita se quiser permitir outro envio
+                // Verifica se a requisição HTTP foi bem-sucedida (status 2xx)
+                // E se a mensagem do N8N indica que o workflow iniciou (resposta do modo 'Immediately')
+                if (response.ok && result.message && (result.message.includes('Workflow started') || result.message.includes('Workflow was started'))) {
+                    // Sucesso! Mostra a mensagem personalizada
+                    statusDiv.textContent = 'Seu envio foi realizado com sucesso, em breve estará no seu e-mail'; // Sua frase de sucesso!
+                    statusDiv.className = 'success'; // Aplica estilo de sucesso
+                    form.reset(); // Limpa os campos do formulário
+                    // Mantém o botão desabilitado aqui para evitar reenvios rápidos.
+                    // Se quiser permitir outro envio imediatamente, descomente a linha abaixo:
+                    // submitButton.disabled = false;
                 } else {
-                    // Erro retornado pelo N8N ou erro HTTP
+                    // Se a resposta não for OK ou a mensagem for inesperada, mostra erro
                     const errorMessage = result.message || `Erro ${response.status} ao contatar o servidor.`;
                     statusDiv.textContent = `Falha no envio: ${errorMessage}. Por favor, tente novamente.`;
-                    statusDiv.className = 'error';
-                    submitButton.disabled = false; // Reabilita em caso de erro
+                    statusDiv.className = 'error'; // Aplica estilo de erro
+                    submitButton.disabled = false; // Reabilita o botão em caso de erro
                 }
 
             } catch (error) {
-                // Erro de rede ou conexão
+                // Captura erros de rede (ex: N8N offline, sem internet)
                 console.error('Erro na requisição fetch:', error);
                 statusDiv.textContent = 'Erro de conexão ao enviar. Verifique sua internet ou tente mais tarde.';
-                statusDiv.className = 'error';
-                submitButton.disabled = false; // Reabilita em caso de erro
+                statusDiv.className = 'error'; // Aplica estilo de erro
+                submitButton.disabled = false; // Reabilita o botão
             }
-            // Não reabilitamos o botão em caso de sucesso aqui, para evitar envios duplicados.
+            // Nota: O botão só é reabilitado em caso de erro para evitar envios múltiplos.
         });
     </script>
 
