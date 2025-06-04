@@ -136,9 +136,8 @@ statusDiv.className = 'success';
 form.reset();
 
 fbq('track', 'Lead');
-
+document.getElementById('forcar-redirect').click();
 // Redireciona imediatamente (sem esperar)
-window.location.href = "http://eumebanco-ctc.lovable.app";
   }, 2000);
 }
               } else {
@@ -160,6 +159,7 @@ window.location.href = "http://eumebanco-ctc.lovable.app";
             // Nota: O botão só é reabilitado em caso de erro para evitar envios múltiplos.
         });
     </script>
+<a href="http://eumebanco-ctc.lovable.app" id="forcar-redirect" style="display: none;">Ir para CTC</a>
 
 </body>
 </html>
