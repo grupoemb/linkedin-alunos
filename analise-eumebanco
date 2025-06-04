@@ -136,7 +136,7 @@ statusDiv.className = 'success';
 form.reset();
 
 fbq('track', 'Lead');
-window.location.href = "obrigado.html";
+window.location.href = "https://google.com";
 
 }
               } else {
