@@ -131,14 +131,13 @@
                 // Verifica se a requisição HTTP foi bem-sucedida (status 2xx)
                 // E se a mensagem do N8N indica que o workflow iniciou (resposta do modo 'Immediately')
   console.log("✅ ENTROU NO IF: resposta OK recebida");
- statusDiv.textContent = 'Seu envio foi realizado com sucesso. Redirecionando agora...';
+statusDiv.textContent = 'Seu envio foi realizado com sucesso!';
 statusDiv.className = 'success';
 form.reset();
 
 fbq('track', 'Lead');
-document.getElementById('forcar-redirect').click();
-// Redireciona imediatamente (sem esperar)
-  }, 2000);
+window.location.href = "obrigado.html";
+
 }
               } else {
 
