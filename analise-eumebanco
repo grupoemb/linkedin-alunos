@@ -131,14 +131,14 @@
                 // Verifica se a requisição HTTP foi bem-sucedida (status 2xx)
                 // E se a mensagem do N8N indica que o workflow iniciou (resposta do modo 'Immediately')
   console.log("✅ ENTROU NO IF: resposta OK recebida");
-  statusDiv.textContent = 'Seu envio foi realizado com sucesso, você será redirecionado em instantes...';
-  statusDiv.className = 'success';
-  form.reset();
+ statusDiv.textContent = 'Seu envio foi realizado com sucesso. Redirecionando agora...';
+statusDiv.className = 'success';
+form.reset();
 
-  fbq('track', 'Lead');
+fbq('track', 'Lead');
 
-  setTimeout(function() {
-    window.location.href = "http://eumebanco-ctc.lovable.app";
+// Redireciona imediatamente (sem esperar)
+window.location.href = "http://eumebanco-ctc.lovable.app";
   }, 2000);
 }
               } else {
