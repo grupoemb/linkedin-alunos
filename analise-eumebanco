@@ -140,9 +140,10 @@ form.reset();
 fbq('track', 'Lead');
 
 // Aguarda 2 segundos e redireciona para a página final
-setTimeout(() => {
+setTimeout(function() {
   window.location.href = "http://eumebanco-ctc.lovable.app";
 }, 2000);
+
 
                 } else {
                     // Se a resposta não for OK ou a mensagem for inesperada, mostra erro
