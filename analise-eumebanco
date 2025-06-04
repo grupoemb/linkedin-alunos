@@ -130,22 +130,21 @@
 
                 // Verifica se a requisição HTTP foi bem-sucedida (status 2xx)
                 // E se a mensagem do N8N indica que o workflow iniciou (resposta do modo 'Immediately')
-                if (response.ok && result.message && (result.message.includes('Workflow started') || result.message.includes('Workflow was started'))) {
-                    // Sucesso! Mostra a mensagem personalizada
-                    statusDiv.textContent = 'Seu envio foi realizado com sucesso, você será redirecionado em instantes...';
-statusDiv.className = 'success';
-form.reset();
+if (response.ok && result.message && (result.message.includes('Workflow started') || result.message.includes('Workflow was started'))) {
+    statusDiv.textContent = 'Seu envio foi realizado com sucesso, você será redirecionado em instantes...';
+    statusDiv.className = 'success';
+    form.reset();
 
-// Rastreamento do evento de envio bem-sucedido para o Facebook Pixel
-fbq('track', 'Lead');
+    fbq('track', 'Lead');
 
-// Aguarda 2 segundos e redireciona para a página final
-setTimeout(function() {
-  window.location.href = "http://eumebanco-ctc.lovable.app";
-}, 2000);
+    setTimeout(function() {
+        window.location.href = "http://eumebanco-ctc.lovable.app";
+    }, 2000);
 
 
-                } else {
+
+              } else {
+
                     // Se a resposta não for OK ou a mensagem for inesperada, mostra erro
                     const errorMessage = result.message || `Erro ${response.status} ao contatar o servidor.`;
                     statusDiv.textContent = `Falha no envio: ${errorMessage}. Por favor, tente novamente.`;
