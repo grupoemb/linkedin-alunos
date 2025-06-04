@@ -130,9 +130,7 @@
 
                 // Verifica se a requisição HTTP foi bem-sucedida (status 2xx)
                 // E se a mensagem do N8N indica que o workflow iniciou (resposta do modo 'Immediately')
-if (response.ok) {
   console.log("✅ ENTROU NO IF: resposta OK recebida");
-
   statusDiv.textContent = 'Seu envio foi realizado com sucesso, você será redirecionado em instantes...';
   statusDiv.className = 'success';
   form.reset();
