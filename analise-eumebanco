@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Perfil LinkedIn - EMB</title>
+    
+    <!-- Facebook Pixel Code -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '741264217388043');
+      fbq('track', 'PageView');
+    </script>
+    <noscript>
+      <img height="1" width="1" style="display:none" 
+           src="https://www.facebook.com/tr?id=741264217388043&ev=PageView&noscript=1"/>
+    </noscript>
+    <!-- End Facebook Pixel Code -->
+
+    <!-- Google Tag Manager -->
+    <script>
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MPRQ9L4');
+    </script>
+    <!-- End Google Tag Manager -->
+    
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; max-width: 600px; margin: 40px auto; padding: 20px 30px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #003366; margin-bottom: 1.5em;}
+        p { color: #333; line-height: 1.6; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+        input[type="email"], input[type="file"] { width: calc(100% - 22px); /* Ajuste para padding/borda */ padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; }
+        input[type="file"] { padding: 5px; background-color: #fff; } /* Fundo branco para file input */
+        button { display: block; width: 100%; padding: 12px; background-color: #0059b3; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.3s ease; font-weight: bold; }
+        button:hover:not(:disabled) { background-color: #003366; }
+        button:disabled { background-color: #a0a0a0; cursor: not-allowed; opacity: 0.7;}
+        #status { margin-top: 25px; padding: 12px; border-radius: 4px; text-align: center; font-weight: bold; font-size: 0.95em;}
+        .success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .processing { color: #004085; background-color: #cce5ff; border: 1px solid #b8daff;}
+        .hidden { display: none; } /* Para esconder o status inicialmente */
+    </style>
+</head>
+<body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript>
+      <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MPRQ9L4" 
+              height="0" width="0" style="display:none;visibility:hidden"></iframe>
+    </noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <h1>Análise de Perfil LinkedIn</h1>
+    <p>Envie seu perfil do LinkedIn em formato PDF e seu e-mail para receber a análise personalizada desenvolvida pelos Bionic's by EMB.</p>
+
+    <form id="upload-form">
+        <div>
+            <label for="email">Seu E-mail:</label>
+            <input type="email" id="email" name="email" placeholder="seu.email@exemplo.com" required>
+        </div>
+        <div>
+            <label for="linkedinPdf">Seu LinkedIn (Arquivo PDF):</label>
+            <input type="file" id="linkedinPdf" name="linkedinPdf" accept=".pdf" required>
+        </div>
+        <button type="submit" id="submit-button">Enviar para Análise</button>
+    </form>
+
+    <div id="status" class="hidden"></div>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const statusDiv = document.getElementById('status');
+        const submitButton = document.getElementById('submit-button');
+
+        // --------------- URL DO SEU WEBHOOK N8N DE PRODUÇÃO ---------------
+        const N8N_WEBHOOK_URL = 'https://grupoemb.app.n8n.cloud/webhook/9fcd7775-6bd0-4217-bcd2-5383cc807034';
+        // --------------- URL DO SEU WEBHOOK N8N DE PRODUÇÃO ---------------
+
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Impede o envio padrão do navegador
+            statusDiv.className = 'hidden'; // Esconde status anterior ao tentar novo envio
+
+            // Pega os dados do formulário
+            const formData = new FormData(form);
+            const email = formData.get('email');
+            const file = formData.get('linkedinPdf'); // O nome 'linkedinPdf' deve bater com o N8N
+
+            // Validações básicas no lado do cliente
+            if (!email || !file || file.size === 0) {
+                statusDiv.textContent = 'Erro: Preencha o e-mail e selecione um arquivo PDF.';
+                statusDiv.className = 'error'; // Mostra erro
+                return;
+            }
+             if (!file.name.toLowerCase().endsWith('.pdf')) {
+                statusDiv.textContent = 'Erro: O arquivo precisa ser um PDF.';
+                 statusDiv.className = 'error'; // Mostra erro
+                 return;
+             }
+             // Validação simples de formato de email
+             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                statusDiv.textContent = 'Erro: Formato de e-mail inválido.';
+                 statusDiv.className = 'error'; // Mostra erro
+                 return;
+             }
+
+            // Feedback visual de processamento
+            statusDiv.textContent = 'Enviando dados... Aguarde um momento.';
+            statusDiv.className = 'processing'; // Mostra status
+            submitButton.disabled = true; // Desabilita botão durante envio
+
+            try {
+                // Envia os dados para o Webhook N8N usando Fetch API
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    body: formData // FormData lida com multipart/form-data para o arquivo
+                });
+
+                // Tenta ler a resposta JSON do N8N
+                const result = await response.json();
+
+                // Verifica se a requisição HTTP foi bem-sucedida (status 2xx)
+                // E se a mensagem do N8N indica que o workflow iniciou (resposta do modo 'Immediately')
+                if (response.ok && result.message && (result.message.includes('Workflow started') || result.message.includes('Workflow was started'))) {
+                    // Sucesso! Mostra a mensagem personalizada
+                    statusDiv.textContent = 'Seu envio foi realizado com sucesso, em breve estará no seu e-mail'; // Sua frase de sucesso!
+                    statusDiv.className = 'success'; // Aplica estilo de sucesso
+                    form.reset(); // Limpa os campos do formulário
+                    // Mantém o botão desabilitado aqui para evitar reenvios rápidos.
+                    // Se quiser permitir outro envio imediatamente, descomente a linha abaixo:
+                    // submitButton.disabled = false;
+                    
+                    // Rastreamento do evento de envio bem-sucedido para o Facebook Pixel
+                    fbq('track', 'Lead');
+window.location.href = "http://eumebanco-ctc.lovable.app";
+
+                } else {
+                    // Se a resposta não for OK ou a mensagem for inesperada, mostra erro
+                    const errorMessage = result.message || `Erro ${response.status} ao contatar o servidor.`;
+                    statusDiv.textContent = `Falha no envio: ${errorMessage}. Por favor, tente novamente.`;
+                    statusDiv.className = 'error'; // Aplica estilo de erro
+                    submitButton.disabled = false; // Reabilita o botão em caso de erro
+                }
+
+            } catch (error) {
+                // Captura erros de rede (ex: N8N offline, sem internet)
+                console.error('Erro na requisição fetch:', error);
+                statusDiv.textContent = 'Erro de conexão ao enviar. Verifique sua internet ou tente mais tarde.';
+                statusDiv.className = 'error'; // Aplica estilo de erro
+                submitButton.disabled = false; // Reabilita o botão
+            }
+            // Nota: O botão só é reabilitado em caso de erro para evitar envios múltiplos.
+        });
+    </script>
+
+</body>
+</html>
