@@ -62,7 +62,7 @@
     <h1>Análise de Perfil LinkedIn</h1>
     <p>Envie seu perfil do LinkedIn em formato PDF e seu e-mail para receber a análise personalizada desenvolvida pelos Bionic's by EMB.</p>
 
-    <form id="upload-form">
+    <div id="upload-form">
         <div>
             <label for="email">Seu E-mail:</label>
             <input type="email" id="email" name="email" placeholder="seu.email@exemplo.com" required>
@@ -71,8 +71,8 @@
             <label for="linkedinPdf">Seu LinkedIn (Arquivo PDF):</label>
             <input type="file" id="linkedinPdf" name="linkedinPdf" accept=".pdf" required>
         </div>
-        <button type="submit" id="submit-button">Enviar para Análise</button>
-    </form>
+        <button type="button" id="submit-button" onclick="processarFormulario()">Enviar para Análise</button>
+    </div>
 
     <div id="status" class="hidden"></div>
 
@@ -85,33 +85,74 @@
         const N8N_WEBHOOK_URL = 'https://grupoemb.app.n8n.cloud/webhook/9fcd7775-6bd0-4217-bcd2-5383cc807034';
         // --------------- URL DO SEU WEBHOOK N8N DE PRODUÇÃO ---------------
 
+        // PRIMEIRA AÇÃO: Enviar dados para o webhook
+        async function primeiraAcao(formData, email, file) {
+            console.log("Executando primeira ação: Enviando dados para webhook...");
+            
+            // Envia os dados para o Webhook N8N usando Fetch API
+            const response = await fetch(N8N_WEBHOOK_URL, {
+                method: 'POST',
+                body: formData // FormData lida com multipart/form-data para o arquivo
+            });
 
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Impede o envio padrão do navegador
+            // Tenta ler a resposta JSON do N8N
+            const result = await response.json();
+            
+            console.log("Primeira ação concluída: Dados enviados");
+            return { response, result };
+        }
+
+        // SEGUNDA AÇÃO: Disparar pixel do Facebook e redirecionar
+        function segundaAcao() {
+            console.log("Executando segunda ação: Disparando pixel e redirecionando...");
+            
+            // Dispara o pixel do Facebook
+            fbq('track', 'Lead');
+            
+            // Redireciona para a página
+            const meta = document.createElement('meta');
+            meta.httpEquiv = "refresh";
+            meta.content = "0;url=http://eumebanco-ctc.lovable.app";
+            document.head.appendChild(meta);
+            
+            console.log("Segunda ação concluída: Pixel disparado e redirecionamento ativado");
+        }
+
+        // FUNÇÃO PRINCIPAL QUE PROCESSA O FORMULÁRIO
+        async function processarFormulario() {
+            console.log("🚀 BOTÃO CLICADO - Iniciando processo...");
             statusDiv.className = 'hidden'; // Esconde status anterior ao tentar novo envio
 
             // Pega os dados do formulário
-            const formData = new FormData(form);
-            const email = formData.get('email');
-            const file = formData.get('linkedinPdf'); // O nome 'linkedinPdf' deve bater com o N8N
+            const email = document.getElementById('email').value;
+            const fileInput = document.getElementById('linkedinPdf');
+            const file = fileInput.files[0];
+
+            console.log("📧 Email:", email);
+            console.log("📄 Arquivo:", file ? file.name : "Nenhum arquivo");
 
             // Validações básicas no lado do cliente
-            if (!email || !file || file.size === 0) {
+            if (!email || !file) {
+                console.log("❌ ERRO: Campos obrigatórios não preenchidos");
                 statusDiv.textContent = 'Erro: Preencha o e-mail e selecione um arquivo PDF.';
                 statusDiv.className = 'error'; // Mostra erro
                 return;
             }
              if (!file.name.toLowerCase().endsWith('.pdf')) {
+                console.log("❌ ERRO: Arquivo não é PDF");
                 statusDiv.textContent = 'Erro: O arquivo precisa ser um PDF.';
                  statusDiv.className = 'error'; // Mostra erro
                  return;
              }
              // Validação simples de formato de email
              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                console.log("❌ ERRO: Email inválido");
                 statusDiv.textContent = 'Erro: Formato de e-mail inválido.';
                  statusDiv.className = 'error'; // Mostra erro
                  return;
              }
+
+            console.log("✅ Validações OK - Iniciando envio...");
 
             // Feedback visual de processamento
             statusDiv.textContent = 'Enviando dados... Aguarde um momento.';
@@ -119,33 +160,31 @@
             submitButton.disabled = true; // Desabilita botão durante envio
 
             try {
-                // Envia os dados para o Webhook N8N usando Fetch API
-                const response = await fetch(N8N_WEBHOOK_URL, {
-                    method: 'POST',
-                    body: formData // FormData lida com multipart/form-data para o arquivo
-                });
+                // Cria FormData manualmente
+                const formData = new FormData();
+                formData.append('email', email);
+                formData.append('linkedinPdf', file);
 
-                // Tenta ler a resposta JSON do N8N
-                const result = await response.json();
-
-                // Verifica se a requisição HTTP foi bem-sucedida (status 2xx)
-                // E se a mensagem do N8N indica que o workflow iniciou (resposta do modo 'Immediately')
-  console.log("✅ ENTROU NO IF: resposta OK recebida");
-statusDiv.textContent = 'Seu envio foi realizado com sucesso!';
-statusDiv.className = 'success';
-form.reset();
-
-fbq('track', 'Lead');
-
-const meta = document.createElement('meta');
-meta.httpEquiv = "refresh";
-meta.content = "0;url=http://eumebanco-ctc.lovable.app";
-document.head.appendChild(meta);
-
-}
-              } else {
-
-                    // Se a resposta não for OK ou a mensagem for inesperada, mostra erro
+                // EXECUTA AS DUAS AÇÕES EM SEQUÊNCIA
+                console.log("🔄 Executando primeira ação...");
+                const { response, result } = await primeiraAcao(formData, email, file);
+                
+                // Verifica se a primeira ação foi bem-sucedida
+                if (response.ok) {
+                    console.log("✅ PRIMEIRA AÇÃO OK: resposta recebida");
+                    statusDiv.textContent = 'Seu envio foi realizado com sucesso!';
+                    statusDiv.className = 'success';
+                    
+                    // Limpa o formulário
+                    document.getElementById('email').value = '';
+                    document.getElementById('linkedinPdf').value = '';
+                    
+                    // Executa a segunda ação
+                    console.log("🔄 Executando segunda ação...");
+                    segundaAcao();
+                } else {
+                    // Se a primeira ação falhar, não executa a segunda
+                    console.log("❌ PRIMEIRA AÇÃO FALHOU:", response.status);
                     const errorMessage = result.message || `Erro ${response.status} ao contatar o servidor.`;
                     statusDiv.textContent = `Falha no envio: ${errorMessage}. Por favor, tente novamente.`;
                     statusDiv.className = 'error'; // Aplica estilo de erro
@@ -154,13 +193,13 @@ document.head.appendChild(meta);
 
             } catch (error) {
                 // Captura erros de rede (ex: N8N offline, sem internet)
-                console.error('Erro na requisição fetch:', error);
+                console.error('❌ ERRO na requisição fetch:', error);
                 statusDiv.textContent = 'Erro de conexão ao enviar. Verifique sua internet ou tente mais tarde.';
                 statusDiv.className = 'error'; // Aplica estilo de erro
                 submitButton.disabled = false; // Reabilita o botão
             }
             // Nota: O botão só é reabilitado em caso de erro para evitar envios múltiplos.
-        });
+        }
     </script>
 <a href="http://eumebanco-ctc.lovable.app" id="forcar-redirect" style="display: none;">Ir para CTC</a>
 
